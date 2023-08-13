@@ -1,6 +1,6 @@
 <template>
   <el-container style="min-height: 100vh;">
-    <el-aside :width="siedeWidth+px"
+    <el-aside :width="siedeWidth+'px'"
       style="background-color: rgb(238, 241, 246); box-shadow: 2px 0 6px rgb(0 21 41 /35%)">
       <el-menu :default-openeds="['1', '3']" style="min-height: 100%;overflow-x: hidden"
         background-color="rgb(48,65,86)" text-color="#fff" active-text-color="#ffd04b" :collapse-transition="false"
@@ -80,10 +80,9 @@
 
       <el-main>
         <div style="margin: 10px 0;">
-          <el-input style="width: 200px" suffix-icon="el-icon-search" placeholder="请输入名称"></el-input>
-          <el-input style="width: 200px" suffix-icon="el-icon-message" placeholder="请输入邮箱" class="ml-5"></el-input>
-          <el-input style="width: 200px" suffix-icon="el-icon-location" placeholder="请输入地址" class="ml-5"></el-input>
-          <el-button class="ml-5" type="primary">搜索</el-button>
+          <el-input style="width: 200px" suffix-icon="el-icon-search" placeholder="请输入查询内容"
+            v-model="bookName"></el-input>
+          <el-button class="ml-5" type="primary" @click="load()">搜索</el-button>
         </div>
         <div style="margin:10px 0;">
           <el-button type="primary">新增 <i class="el-icon-circle-plus-outline"></i></el-button>
@@ -91,12 +90,16 @@
           <el-button type="primary">导入 <i class="el-icon-bottom"></i></el-button>
           <el-button type="primary">导出 <i class="el-icon-top"></i></el-button>
         </div>
-        <el-table :data="tableData" border stripe :header-cell-class-name="headerBg">
-          <el-table-column prop="date" label="日期" width="140">
+        <el-table :data="tableData" stripe :header-cell-class-name="headerBg">
+          <el-table-column prop="id" label="Id" width="140" hidden="true">
           </el-table-column>
-          <el-table-column prop="name" label="姓名" width="120">
+          <el-table-column prop="book_name" label="书名" width="140">
           </el-table-column>
-          <el-table-column prop="address" label="地址">
+          <el-table-column prop="book_author" label="作者" width="120">
+          </el-table-column>
+          <el-table-column prop="book_category" label="类型" width="120">
+          </el-table-column>
+          <el-table-column prop="book_publisher" label="出版社" width="120">
           </el-table-column>
           <el-table-column label="操作">
             <template slot-scope="scope">
@@ -106,8 +109,9 @@
           </el-table-column>
         </el-table>
         <div style="padding: 10px 0;">
-          <el-pagination :page-sizes="[5, 10, 15, 20]" :page-size="3" layout="total, sizes, prev, pager, next, jumper"
-            :total="100">
+          <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pageNum"
+            :page-sizes="[2, 5, 10, 20]" :page-size="pageSize" layout="total, sizes, prev, pager, next, jumper"
+            :total="total">
           </el-pagination>
         </div>
       </el-main>
@@ -140,18 +144,29 @@
 <script>
   export default {
     data () {
-      const item = {
-        date: '1977-02-12',
-        name: '陈劲松',
-        address: '陕西省西安市大寨路'
-      }
       return {
-        tableData: Array(5).fill(item),
+        tableData: [],
+        total: 0,
+        pageNum: 1,
+        pageSize: 2,
         collapseBtnClass: "el-icon-s-fold",
         isCollapse: false,
         siedeWidth: 200,
         logTextShow: true,
-        headerBg: 'headerBg'
+        headerBg: 'headerBg',
+        bookName: ""
+      }
+    },
+    created () {
+      // 请求分页查询数据
+      this.load()
+    },
+    devServer: {
+      proxy: {
+        '/book': {
+          target: 'http://localhost:9091',
+          changeOrigin: true
+        }
       }
     },
     methods: {
@@ -166,6 +181,25 @@
           this.collapseBtnClass = 'el-icon-s-fold'
         }
         console.log("Triggered")
+      },
+      handleSizeChange (pageSize) {
+        console.log(`每页 ${pageSize} 条`)
+        this.pageSize = pageSize
+        this.load()
+      },
+      handleCurrentChange (pageNum) {
+        console.log(`当前页: ${pageNum}`)
+        this.pageNum = pageNum
+        this.load()
+      },
+      load () {
+        fetch("http://localhost:9091/book/page?pageSize=" + this.pageSize + "&pageNum=" + this.pageNum + "&bookName=" + this.bookName).then(res => res.json()).then(res => {
+          console.log(res.total)
+          console.log(res)
+          console.log("hello")
+          this.tableData = res.data
+          this.total = res.total
+        })
       }
     }
   }
